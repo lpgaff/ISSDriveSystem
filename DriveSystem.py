@@ -29,6 +29,14 @@ class Application( tk.Frame ):
 		self.span_bits = 1
 		self.row_target = self.row_bits + self.span_bits
 		self.span_target = 1
+
+		self.row_textentry = self.row_target + self.span_target
+		self.col_textentry = 0
+		self.span_textentry = 4
+		
+		self.row_textreturn = self.row_textentry + self.span_textentry
+		self.col_textreturn = 0
+		self.span_textreturn = 4
 		
 		self.row_connect = 0
 		self.span_connect = 2
@@ -36,6 +44,10 @@ class Application( tk.Frame ):
 		self.span_disconnect = 2
 		self.row_quit = self.row_disconnect + self.span_disconnect
 		self.span_quit = 2
+		
+		self.row_send = self.row_textentry
+		self.span_send = 2
+		self.col_send = self.col_textentry + self.span_textreturn
 		
 		# Frame geometry
 		self.grid()
@@ -52,6 +64,10 @@ class Application( tk.Frame ):
 		self.paritynone = tk.IntVar()
 		self.parity = tk.StringVar()
 		self.nbits = tk.StringVar()
+		self.txt_return = tk.StringVar()
+		
+		# Current commands in text box
+		self.cmd_now = tk.StringVar()
 		
 		# Port option lists
 		self.port_opt = list_ports.comports()			# get port list
@@ -65,6 +81,7 @@ class Application( tk.Frame ):
 		# Create widgets in an order
 		self.do_serial_setup()
 		self.create_target_buttons()
+		self.create_text_entry()
 
 		# Quit button
 		self.quit = tk.Button( self, text="QUIT", fg="red", command=root.destroy )
@@ -83,7 +100,7 @@ class Application( tk.Frame ):
 			
 			self.rowconfigure( x, weight=2, uniform=1 )
 
-		for y in range(4):
+		for y in range(5):
 
 			self.columnconfigure( y, weight=1, uniform=1 )
 		
@@ -171,6 +188,28 @@ class Application( tk.Frame ):
 		self.pos2 = tk.Button( self, text="Position 2", fg="purple", command=lambda:self.select_pos(2) )
 		self.pos2.grid( row=self.row_target, column=2, sticky="nsew" )
 	
+	
+	# Create text entry manual commands
+	def create_text_entry( self ):
+	
+		# Command
+		self.txtcmd = tk.Entry( self, textvariable=self.cmd_now )
+		self.txtcmd.grid( row=self.row_textentry, column=self.col_textentry,
+						  rowspan=1, columnspan=self.span_textentry,
+						  sticky="nsew" )
+	
+		# Return
+		self.txtout = tk.Text( self )
+		self.txtout.grid( row=self.row_textreturn, column=self.col_textreturn,
+						  rowspan=1, columnspan=self.span_textreturn,
+						  sticky="nsew" )
+	
+		# Send button
+		self.sendbutton = tk.Button( self, text="Send", fg="green", command=lambda:self.writers232(self.cmd_now) )
+		self.sendbutton.grid( row=self.row_send, rowspan=self.span_send,
+							  column=self.col_send, columnspan=1,
+							  sticky="nsew" )
+	
 
 	###########
 	# Actions #
@@ -217,6 +256,7 @@ class Application( tk.Frame ):
 		self.serial_port.baudrate = int( self.baudrate.get() )	# set baud rate
 		self.serial_port.parity = int( self.parity.get() )		# set parity
 		self.serial_port.bytesize = int( self.nbits.get() )		# set bytesize
+		self.serial_port.timeout = 3							# set timeout to 3 seconds
 		self.serial_port.open()									# open the port
 	
 	# Disconnect from serial port
@@ -228,6 +268,27 @@ class Application( tk.Frame ):
 	def select_pos( self, pos ):
 	
 		print( "moving to position", pos )
+	
+	
+	# read line
+	def readr232( self ):
+		
+		if self.serial_port.is_open():
+		
+			outputline = self.serial_port.readline()
+			self.txt_return.set( outputline )
+			print( outputline )
+
+		else:
+	
+			print( "The port is not open\n" )
+
+	# write info
+	def writers232( self, cmd ):
+	
+		nbytes = self.serial_port.write( cmd )
+		self.readrs232()
+		print( outputline )
 
 
 	############
